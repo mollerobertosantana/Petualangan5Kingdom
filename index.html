@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petualangan Lima Kingdom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e4f2fc; --sky:#c9e6fa; --surface:#fafdff; --ink:#15324a; --muted:#4c6880; --line:#bcdcf2; --accent:#1f6fae;
+  --monera:#b8336f; --protista:#0f7f86; --fungi:#9a5f17; --plantae:#3a7f31; --animalia:#c4471f;
+  --good:#2e7d32; --bad:#b3261e;
+  --display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+  /* layout: header strip with tabs; game stage = specimen card beside a column of five kingdom bins */
+}
+*{box-sizing:border-box}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.k-monera{--k:var(--monera)} .k-protista{--k:var(--protista)} .k-fungi{--k:var(--fungi)} .k-plantae{--k:var(--plantae)} .k-animalia{--k:var(--animalia)}
+
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--sky);border-bottom:2px solid var(--line)}
+.brand{display:flex;gap:12px;align-items:center}
+.brand svg{width:58px;height:62px;flex:none}
+.tab{background:var(--surface)!important}
+.tab[aria-current="page"]{background:var(--accent)!important}
+.buddy{display:flex;gap:10px;align-items:flex-end;margin-bottom:14px}
+.buddy svg{width:96px;height:104px;flex:none}
+.bubble{position:relative;margin:0 0 18px;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:10px 14px;font-size:.95rem;font-weight:600;color:var(--ink)}
+.bubble::before{content:"";position:absolute;left:-10px;bottom:14px;border:8px solid transparent;border-right-color:var(--line);border-left:0}
+.bubble b{color:var(--accent)}
+.lulu.happy{animation:hop .5s ease-out}
+.lulu.sad{animation:droop .5s ease-out}
+@keyframes hop{30%{transform:translateY(-10px)}60%{transform:translateY(0)}80%{transform:translateY(-4px)}}
+@keyframes droop{40%{transform:rotate(-6deg)}80%{transform:rotate(3deg)}}
+.lulu{transform-origin:50% 100%}
+.brand h1{font-family:var(--display);font-weight:600;font-size:1.6rem;margin:0;line-height:1.1}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{font:600 1rem var(--display);padding:8px 16px;border-radius:999px;border:2px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.tab:hover{border-color:var(--accent)}
+.tab[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+[hidden]{display:none!important}
+.hud{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.hud h2{font:600 1.25rem var(--display);margin:0}
+.progress{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--line)}
+.dot.now{background:var(--accent)} .dot.ok{background:var(--good)} .dot.no{background:var(--bad)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px 12px;font-size:.9rem;color:var(--muted)}
+.chip b{color:var(--ink);font-family:var(--display);font-size:1.1rem;font-variant-numeric:tabular-nums;margin-left:4px}
+
+.stage{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(250px,1fr);gap:20px;align-items:start}
+@media (max-width:760px){.stage{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 2px 0 var(--line)}
+.specimen{border-left:8px solid var(--line)}
+.specimen[draggable="true"]{cursor:grab}
+.specimen.answered{border-left-color:var(--k)}
+.spec-head{display:flex;gap:18px;align-items:center}
+@media (max-width:420px){.spec-head{flex-direction:column;align-items:flex-start}}
+.art{flex:none;width:132px;height:132px;border-radius:50%;background:#d9ecfa;display:grid;place-items:center;font-size:70px;line-height:1}
+.answered .art{background:color-mix(in srgb,var(--k) 16%,var(--surface))}
+.art svg{width:112px;height:112px}
+.art .q{font:600 76px var(--display);color:var(--muted)}
+.tagline{font:700 .78rem var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
+.spec-name{font:600 1.75rem var(--display);margin:2px 0;line-height:1.15;text-wrap:balance}
+.alt{color:var(--muted);margin:0;font-size:.95rem}
+.desc{font-size:1.1rem;margin:16px 0 0;max-width:60ch}
+.clue{margin:14px 0 0;padding:10px 14px;border-radius:10px;background:#fff5d6;border:1px dashed #c9a43a}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{font:600 1rem var(--display);padding:10px 18px;border-radius:12px;border:2px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.bins{display:grid;gap:10px}
+.bins-title{font:600 1rem var(--display);margin:0 0 2px;color:var(--muted)}
+.bin{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:14px;border:2px solid var(--k);background:var(--surface);background:color-mix(in srgb,var(--k) 9%,var(--surface));cursor:pointer;color:var(--ink);font:inherit;width:100%;transition:background .15s}
+.bin:hover:not(:disabled),.bin.over{background:color-mix(in srgb,var(--k) 22%,var(--surface))}
+.key{flex:none;width:28px;height:28px;border-radius:8px;background:var(--k);color:#fff;display:grid;place-items:center;font:600 .95rem var(--display)}
+.bin-name{font:600 1.15rem var(--display);color:var(--k);display:block;line-height:1.15}
+.bin-hint{font-size:.85rem;color:var(--muted);display:block}
+.bin:disabled{cursor:default}
+.bin.right{background:var(--k)}
+.bin.right .bin-name,.bin.right .bin-hint{color:#fff}
+.bin.right .key{background:#fff;color:var(--k)}
+.bin.wrong{border-style:dashed}
+.bin.wrong .bin-name,.bin.out .bin-name{text-decoration:line-through}
+.bin.out{opacity:.4}
+.help{color:var(--muted);font-size:.9rem;margin:4px 2px 0}
+
+.feedback{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.verdict{font:600 1.45rem var(--display);margin:0}
+.verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)}
+.feedback p{margin:6px 0 0;max-width:62ch}
+.kword{font-weight:700;color:var(--k)}
+.pts{font-family:var(--display);font-weight:600;color:var(--good)}
+
+.clues{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:8px}
+.clues li{padding:10px 14px;border-radius:10px;background:var(--bg);display:flex;gap:12px;align-items:baseline}
+.clues .n{font:600 .9rem var(--display);color:var(--accent);flex:none;width:84px}
+.clues li.locked{color:var(--muted);background:transparent;border:1px dashed var(--line)}
+.clues li.fresh{animation:pop .35s ease-out}
+.worth{display:inline-block;margin-top:14px;padding:4px 12px;border-radius:999px;background:#e3efe4;color:var(--good);font:600 .95rem var(--display)}
+@keyframes pop{from{transform:scale(.97);background:#fff1bf}to{transform:none}}
+.specimen.fresh{animation:pop .3s ease-out}
+
+/* results */
+.results{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px;align-items:start}
+@media (max-width:760px){.results{grid-template-columns:1fr}}
+.big{font:600 3.2rem var(--display);margin:0;line-height:1;font-variant-numeric:tabular-nums}
+.big small{font-size:1.1rem;color:var(--muted)}
+.rows{display:grid;gap:8px;margin-top:16px}
+.krow{display:grid;grid-template-columns:96px 1fr 44px;gap:10px;align-items:center;font-size:.95rem}
+.krow .nm{font:600 1rem var(--display);color:var(--k)}
+.bar{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--k)}
+.krow .ct{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.review{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.review li{padding:12px 14px;border-radius:12px;background:var(--bg);border-left:6px solid var(--k)}
+.review .r-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.review strong{font-family:var(--display);font-weight:600}
+.review .mark{font-weight:700}
+.review .mark.ok{color:var(--good)} .review .mark.no{color:var(--bad)}
+.review p{margin:4px 0 0;font-size:.95rem}
+.results h3,.learn h3{font:600 1.25rem var(--display);margin:0 0 10px}
+
+/* field guide */
+.learn{display:grid;gap:22px}
+.intro{max-width:68ch;margin:0}
+.intro h2{font:600 1.6rem var(--display);margin:0 0 6px;text-wrap:balance}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.kcard{border-top:6px solid var(--k);padding:18px}
+.kcard h3{color:var(--k);margin:0}
+.kcard .who{color:var(--muted);font-size:.9rem;margin:0 0 8px}
+.kcard p{margin:0;font-size:.95rem}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:.95rem}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+thead th{font:600 1.05rem var(--display);color:var(--k)}
+tbody th{font-weight:700;color:var(--muted);width:130px}
+.key-steps{margin:0;padding-left:22px;display:grid;gap:8px;max-width:70ch}
+.key-steps b{font-weight:700}
+.note{color:var(--muted);font-size:.9rem;max-width:70ch;margin:0}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span id="brandBubble"></span>
+    <div>
+      <h1>Petualangan Lima Kingdom</h1>
+      <p>Kelompokkan makhluk hidup bersama Bubble ke dalam Monera, Protista, Fungi, Plantae, atau Animalia</p>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Mode permainan">
+    <button class="tab" data-view="sort" type="button">Kelompokkan!</button>
+    <button class="tab" data-view="mystery" type="button">Organisme Misterius</button>
+    <button class="tab" data-view="learn" type="button">Buku Panduan</button>
+  </nav>
+</header>
+
+<main>
+  <!-- SORT IT -->
+  <section class="view" id="view-sort" aria-labelledby="sortTitle">
+    <div class="hud">
+      <div>
+        <h2 id="sortTitle">Kelompokkan! Masukkan setiap spesimen ke kingdom yang tepat</h2>
+        <div class="progress" id="sortDots" aria-hidden="true"></div>
+      </div>
+      <div class="chips">
+        <span class="chip">Skor<b id="sortScore">0</b></span>
+        <span class="chip">Beruntun<b id="sortStreak">0</b></span>
+        <span class="chip">Terbaik<b id="sortBest">–</b></span>
+      </div>
+    </div>
+    <div id="sortPlay" class="stage">
+      <article class="card specimen" id="specimen" draggable="true" aria-live="polite">
+        <div class="spec-head">
+          <div class="art" id="specArt"></div>
+          <div>
+            <p class="tagline" id="specTag"></p>
+            <h3 class="spec-name" id="specName"></h3>
+            <p class="alt" id="specAlt"></p>
+          </div>
+        </div>
+        <p class="desc" id="specDesc"></p>
+        <p class="clue" id="specClue" hidden></p>
+        <div class="actions" id="sortActions">
+          <button class="btn ghost" id="clueBtn" type="button">Lihat petunjuk (poin setengah)</button>
+        </div>
+        <div class="feedback" id="sortFeedback" hidden></div>
+      </article>
+      <div>
+        <div class="buddy" id="sortBuddy"></div>
+        <div class="bins" id="sortBins"></div>
+        <p class="help">Ketuk salah satu kingdom, seret kartu ke kingdom, atau tekan tombol 1 sampai 5. Tekan Enter untuk spesimen berikutnya.</p>
+      </div>
+    </div>
+    <div id="sortEnd" hidden></div>
+  </section>
+
+  <!-- MYSTERY -->
+  <section class="view" id="view-mystery" aria-labelledby="mysTitle" hidden>
+    <div class="hud">
+      <div>
+        <h2 id="mysTitle">Organisme Misterius: tebak kingdom-nya dari petunjuk</h2>
+        <div class="progress" id="mysDots" aria-hidden="true"></div>
+      </div>
+      <div class="chips">
+        <span class="chip">Skor<b id="mysScore">0</b></span>
+        <span class="chip">Terbaik<b id="mysBest">–</b></span>
+      </div>
+    </div>
+    <div id="mysPlay" class="stage">
+      <article class="card specimen" id="mysCard" aria-live="polite">
+        <div class="spec-head">
+          <div class="art" id="mysArt"></div>
+          <div>
+            <p class="tagline" id="mysTag"></p>
+            <h3 class="spec-name" id="mysName">Siapakah aku?</h3>
+            <p class="alt" id="mysAlt">Tebak lebih awal untuk poin lebih banyak. Tebakan salah akan membuka petunjuk berikutnya.</p>
+          </div>
+        </div>
+        <ol class="clues" id="mysClues"></ol>
+        <span class="worth" id="mysWorth"></span>
+        <div class="actions" id="mysActions">
+          <button class="btn ghost" id="mysClueBtn" type="button">Buka petunjuk berikutnya</button>
+        </div>
+        <div class="feedback" id="mysFeedback" hidden></div>
+      </article>
+      <div>
+        <div class="buddy" id="mysBuddy"></div>
+        <div class="bins" id="mysBins"></div>
+        <p class="help">Ketuk salah satu kingdom atau tekan tombol 1 sampai 5. Kingdom yang dicoret sudah pasti salah.</p>
+      </div>
+    </div>
+    <div id="mysEnd" hidden></div>
+  </section>
+
+  <!-- FIELD GUIDE -->
+  <section class="view learn" id="view-learn" hidden>
+    <div class="buddy" id="learnBuddy"></div>
+    <div class="intro">
+      <h2>Buku Panduan Lima Kingdom</h2>
+      <p>Ilmuwan mengelompokkan makhluk hidup agar lebih mudah dipelajari. Dalam sistem lima kingdom, setiap organisme dimasukkan ke satu kingdom berdasarkan tiga pertanyaan besar: Apakah selnya punya inti sel? Apakah ia bersel satu atau bersel banyak? Bagaimana cara ia mendapat makanan?</p>
+    </div>
+    <div class="kgrid" id="kgrid"></div>
+    <div>
+      <h3>Perbandingan kelima kingdom</h3>
+      <div class="tablewrap"><table id="ktable"></table></div>
+    </div>
+    <div class="card">
+      <h3>Kunci cepat untuk mengelompokkan organisme</h3>
+      <ol class="key-steps">
+        <li><b>Apakah selnya punya inti sel?</b> Tidak: termasuk <span class="kword k-monera">Monera</span>.</li>
+        <li><b>Apakah ia bersel satu, atau koloni sederhana dari sel-sel yang sama?</b> Ya: termasuk <span class="kword k-protista">Protista</span>. Hati-hati dengan ragi, anggota Fungi yang bersel satu.</li>
+        <li><b>Apakah ia hijau, membuat makanan sendiri dengan fotosintesis, dan berdinding sel selulosa?</b> Ya: termasuk <span class="kword k-plantae">Plantae</span>.</li>
+        <li><b>Apakah ia menyerap makanan dari tempat tumbuhnya, berkembang biak dengan spora, dan berdinding sel kitin?</b> Ya: termasuk <span class="kword k-fungi">Fungi</span>.</li>
+        <li><b>Apakah ia memakan makanannya dan selnya tidak punya dinding sel?</b> Ya: termasuk <span class="kword k-animalia">Animalia</span>.</li>
+      </ol>
+      <div class="actions">
+        <button class="btn" type="button" data-go="sort">Main Kelompokkan!</button>
+        <button class="btn ghost" type="button" data-go="mystery">Main Organisme Misterius</button>
+      </div>
+    </div>
+    <p class="note">Ahli ekologi Amerika, Robert Whittaker, mengusulkan sistem lima kingdom pada tahun 1969. Kini banyak ilmuwan juga memakai tiga domain (Bacteria, Archaea, dan Eukarya) dan membagi makhluk hidup ke lebih banyak kingdom, tetapi lima kingdom tetap menjadi cara yang jelas untuk mulai belajar.</p>
+  </section>
+</main>
+
+<script>
+/* ---------- drawings ---------- */
+const S = inner => `<svg viewBox="0 0 100 100" aria-hidden="true">${inner}</svg>`;
+function rod(x,y,w,h,rot,fill,stroke){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="${fill}" stroke="${stroke}" stroke-width="3" transform="rotate(${rot} ${x+w/2} ${y+h/2})"/>`;}
+const ICON = {
+  ecoli: S(`<path d="M80 46 C88 36 92 54 99 42" fill="none" stroke="#a23a6c" stroke-width="2"/><path d="M80 56 C88 66 92 50 99 62" fill="none" stroke="#a23a6c" stroke-width="2"/><path d="M18 50 C10 42 8 58 1 48" fill="none" stroke="#a23a6c" stroke-width="2"/>${rod(16,36,66,28,0,"#f3c6da","#a23a6c")}<path d="M32 50 q7 -9 14 0 t14 0" fill="none" stroke="#a23a6c" stroke-width="2.5" opacity=".7"/>`),
+  strep: S([14,30,46,62,78].map((x,i)=>`<circle cx="${x+4}" cy="${50+[0,-5,0,5,0][i]}" r="9" fill="#f3c6da" stroke="#a23a6c" stroke-width="3"/>`).join("")),
+  cyano: S(Array.from({length:8},(_,i)=>`<circle cx="${12+i*11}" cy="${(50+14*Math.sin(i*.8)).toFixed(1)}" r="6.5" fill="#7cc4b3" stroke="#2f7f73" stroke-width="2.5"/>`).join("")),
+  lacto: S(rod(14,30,40,13,-20,"#f6e7c8","#a3742b")+rod(48,44,40,13,15,"#f6e7c8","#a3742b")+rod(22,62,40,13,5,"#f6e7c8","#a3742b")),
+  aceto: S(`<rect x="12" y="58" width="76" height="26" rx="8" fill="#fbfbf7" stroke="#c9c7b8" stroke-width="2"/>`+rod(20,28,26,11,-10,"#efd9b0","#9a6e2a")+rod(52,22,26,11,20,"#efd9b0","#9a6e2a")+rod(40,42,26,11,-30,"#efd9b0","#9a6e2a")),
+  rhizo: S(`<path d="M50 2 V40 M50 40 C40 60 30 70 22 98 M50 40 C60 60 72 72 82 98" stroke="#8a6a46" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="38" cy="66" r="17" fill="#e8b7a8" stroke="#a5634f" stroke-width="3"/>`+rod(28,58,12,6,-20,"#fff","#a5634f").replace('stroke-width="3"','stroke-width="1.5"')+rod(38,66,12,6,30,"#fff","#a5634f").replace('stroke-width="3"','stroke-width="1.5"')+rod(30,72,12,6,0,"#fff","#a5634f").replace('stroke-width="3"','stroke-width="1.5"')),
+  amoeba: S(`<path d="M30 38 C18 18 44 12 50 28 C60 8 88 18 76 40 C96 50 86 78 64 70 C60 92 32 90 34 70 C12 74 10 48 30 38Z" fill="#cfe9e6" stroke="#1f7f7a" stroke-width="3"/><circle cx="52" cy="50" r="8" fill="#1f7f7a" opacity=".6"/><circle cx="38" cy="60" r="4" fill="none" stroke="#1f7f7a" stroke-width="2"/><circle cx="66" cy="38" r="3.5" fill="none" stroke="#1f7f7a" stroke-width="2"/>`),
+  paramecium: (()=>{let c="";for(let a=0;a<360;a+=13){const r=a*Math.PI/180;c+=`<line x1="${(50+36*Math.cos(r)).toFixed(1)}" y1="${(50+17*Math.sin(r)).toFixed(1)}" x2="${(50+43*Math.cos(r)).toFixed(1)}" y2="${(50+22*Math.sin(r)).toFixed(1)}" stroke="#1f7f7a" stroke-width="1.6"/>`;}return S(`<g transform="rotate(-18 50 50)">${c}<ellipse cx="50" cy="50" rx="36" ry="17" fill="#d6eef0" stroke="#1f7f7a" stroke-width="3"/><path d="M40 38 C50 50 62 52 70 46" fill="none" stroke="#1f7f7a" stroke-width="2"/><ellipse cx="44" cy="54" rx="9" ry="5" fill="#1f7f7a" opacity=".55"/></g>`);})(),
+  euglena: S(`<path d="M80 46 C88 36 84 24 96 14" fill="none" stroke="#4f7d2e" stroke-width="2.5"/><path d="M10 58 C26 34 64 34 82 46 C70 62 34 74 10 58Z" fill="#d9efc8" stroke="#4f7d2e" stroke-width="3"/><ellipse cx="34" cy="54" rx="6" ry="3.5" fill="#5aa13a"/><ellipse cx="48" cy="50" rx="6" ry="3.5" fill="#5aa13a"/><ellipse cx="44" cy="60" rx="6" ry="3.5" fill="#5aa13a"/><ellipse cx="60" cy="54" rx="6" ry="3.5" fill="#5aa13a"/><circle cx="74" cy="47" r="3" fill="#d33a2c"/>`),
+  diatom: (()=>{let c="";for(let a=0;a<360;a+=15){const r=a*Math.PI/180;c+=`<line x1="${(50+11*Math.cos(r)).toFixed(1)}" y1="${(50+11*Math.sin(r)).toFixed(1)}" x2="${(50+31*Math.cos(r)).toFixed(1)}" y2="${(50+31*Math.sin(r)).toFixed(1)}" stroke="#9a8434" stroke-width="1.5"/>`;}return S(`<circle cx="50" cy="50" r="38" fill="#f3e9c4" stroke="#9a8434" stroke-width="3"/><circle cx="50" cy="50" r="31" fill="none" stroke="#9a8434" stroke-width="1.5"/>${c}<circle cx="50" cy="50" r="7" fill="#c7a94a"/>`);})(),
+  plasmodium: S(`<circle cx="30" cy="70" r="20" fill="#eaa0a3" stroke="#b5474e" stroke-width="2.5"/><circle cx="56" cy="46" r="32" fill="#e7868a" stroke="#b5474e" stroke-width="3"/><circle cx="56" cy="46" r="17" fill="#f0a9ac"/><circle cx="58" cy="44" r="9" fill="none" stroke="#4c2f82" stroke-width="3"/><circle cx="64" cy="40" r="3" fill="#4c2f82"/>`),
+  volvox: (()=>{let c="";for(let a=0;a<360;a+=20){const r=a*Math.PI/180;c+=`<circle cx="${(50+32*Math.cos(r)).toFixed(1)}" cy="${(50+32*Math.sin(r)).toFixed(1)}" r="2.6" fill="#3f7f25"/>`;}for(let a=10;a<360;a+=30){const r=a*Math.PI/180;c+=`<circle cx="${(50+24*Math.cos(r)).toFixed(1)}" cy="${(50+24*Math.sin(r)).toFixed(1)}" r="2.2" fill="#3f7f25" opacity=".7"/>`;}return S(`<circle cx="50" cy="50" r="40" fill="#e4f2d3" stroke="#3f7f25" stroke-width="3"/>${c}<circle cx="44" cy="46" r="9" fill="#9ccc6e"/><circle cx="60" cy="60" r="7" fill="#9ccc6e"/>`);})(),
+  yeast: S(`<ellipse cx="40" cy="56" rx="24" ry="19" fill="#f4e2c0" stroke="#9a6a22" stroke-width="3"/><ellipse cx="68" cy="36" rx="13" ry="10" fill="#f4e2c0" stroke="#9a6a22" stroke-width="3"/><ellipse cx="76" cy="72" rx="14" ry="11" fill="#f4e2c0" stroke="#9a6a22" stroke-width="3"/><circle cx="40" cy="56" r="6" fill="#9a6a22" opacity=".5"/><circle cx="76" cy="72" r="4" fill="#9a6a22" opacity=".5"/>`),
+  tempeh: S(`<ellipse cx="22" cy="84" rx="13" ry="9" fill="#e2c48a"/><ellipse cx="48" cy="86" rx="13" ry="9" fill="#e2c48a"/><ellipse cx="74" cy="84" rx="13" ry="9" fill="#e2c48a"/><path d="M8 76 C30 70 60 82 92 74" stroke="#8d8d8d" stroke-width="2" fill="none"/>${[[24,30],[46,18],[66,34],[82,24]].map(([x,y])=>`<path d="M${x} 76 C${x-4} ${(y+76)/2} ${x+4} ${(y+76)/2} ${x} ${y+7}" stroke="#8d8d8d" stroke-width="2" fill="none"/><circle cx="${x}" cy="${y}" r="7" fill="#3b3b3b"/>`).join("")}`),
+  penicillium: S(`<circle cx="50" cy="54" r="38" fill="#f29a2e" stroke="#c46f12" stroke-width="3"/><path d="M50 16 C54 8 60 8 64 10" stroke="#4f7d2e" stroke-width="4" fill="none" stroke-linecap="round"/>${[[36,44,12],[54,40,9],[44,62,10],[62,60,7],[30,62,6]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#6fb3a3"/><circle cx="${x}" cy="${y}" r="${r*.55}" fill="#4f9483"/>`).join("")}`),
+  oncom: S(`<rect x="14" y="30" width="72" height="44" rx="8" fill="#f0a24a" stroke="#c4751f" stroke-width="3"/>${Array.from({length:18},(_,i)=>`<circle cx="${22+(i%6)*11+((i/6|0)%2)*5}" cy="${40+(i/6|0)*12}" r="2.4" fill="#c4751f"/>`).join("")}`),
+  woodear: S(`<rect x="6" y="70" width="88" height="20" rx="10" fill="#9b7a55" stroke="#6e5234" stroke-width="3"/><path d="M30 70 C14 54 22 22 44 24 C58 26 62 44 52 52 C46 58 52 66 46 70Z" fill="#6b3f22" stroke="#4a2914" stroke-width="2.5"/><path d="M60 70 C56 56 66 40 80 46 C90 52 84 66 74 70Z" fill="#7a4a2a" stroke="#4a2914" stroke-width="2.5"/>`),
+  moss: S(`<path d="M6 84 C20 64 80 64 94 84Z" fill="#5c9a3a"/>${[18,30,42,54,66,78].map((x,i)=>`<path d="M${x} 74 C${x+2} 56 ${x-2} 46 ${x+3} ${36+(i%2)*8}" stroke="#7a6a3a" stroke-width="2" fill="none"/><ellipse cx="${x+3}" cy="${33+(i%2)*8}" rx="3" ry="5" fill="#a7894a"/>`).join("")}${Array.from({length:14},(_,i)=>`<circle cx="${12+i*6}" cy="${76-Math.abs(7-i)}" r="4" fill="#78b84c"/>`).join("")}`),
+  orchid: S(`<ellipse cx="50" cy="26" rx="15" ry="20" fill="#ffffff" stroke="#b9aecb" stroke-width="2"/><ellipse cx="24" cy="50" rx="22" ry="16" fill="#ffffff" stroke="#b9aecb" stroke-width="2"/><ellipse cx="76" cy="50" rx="22" ry="16" fill="#ffffff" stroke="#b9aecb" stroke-width="2"/><ellipse cx="36" cy="74" rx="11" ry="17" fill="#ffffff" stroke="#b9aecb" stroke-width="2" transform="rotate(25 36 74)"/><ellipse cx="64" cy="74" rx="11" ry="17" fill="#ffffff" stroke="#b9aecb" stroke-width="2" transform="rotate(-25 64 74)"/><path d="M42 54 C44 72 56 72 58 54Z" fill="#f2c94c" stroke="#c9952a" stroke-width="2"/><circle cx="50" cy="50" r="5" fill="#d9a63a"/>`),
+  coral: S(`<g stroke="#e0664f" stroke-width="7" stroke-linecap="round" fill="none"><path d="M50 94 V58 M50 70 L32 50 M32 50 L22 30 M32 50 L40 28 M50 58 L64 40 M64 40 L60 18 M64 40 L80 28 M50 80 L74 66 M74 66 L86 52"/></g>${[[22,30],[40,28],[60,18],[80,28],[86,52]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="5" fill="#f6b3a3"/>`).join("")}`),
+  sponge: S(`<path d="M18 92 V40 C18 30 38 30 38 40 V92Z" fill="#e9c44a" stroke="#b8901f" stroke-width="3"/><path d="M42 92 V24 C42 12 64 12 64 24 V92Z" fill="#f0cf58" stroke="#b8901f" stroke-width="3"/><path d="M68 92 V50 C68 40 86 40 86 50 V92Z" fill="#e9c44a" stroke="#b8901f" stroke-width="3"/><ellipse cx="28" cy="38" rx="6" ry="3" fill="#7a5c10"/><ellipse cx="53" cy="22" rx="7" ry="3.5" fill="#7a5c10"/><ellipse cx="77" cy="48" rx="5" ry="2.5" fill="#7a5c10"/>${[[28,60],[24,76],[52,46],[56,64],[50,80],[77,70],[74,84]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2.6" fill="#b8901f"/>`).join("")}`),
+  jelly: S(`<g stroke="#8a6fc4" stroke-width="2.5" fill="none" stroke-linecap="round">${[30,42,54,66].map(x=>`<path d="M${x} 52 C${x-6} 64 ${x+6} 74 ${x} 94"/>`).join("")}</g><path d="M16 54 C16 18 84 18 84 54 C74 50 66 58 58 52 C50 58 42 50 34 56 C26 50 22 56 16 54Z" fill="#cbb8ef" stroke="#8a6fc4" stroke-width="3"/><path d="M34 40 C40 30 54 28 62 34" stroke="#ffffff" stroke-width="3" fill="none" opacity=".7"/>`),
+  worm: S(`<path d="M10 66 C24 40 40 76 54 52 C66 32 80 48 90 36" stroke="#cf7f7f" stroke-width="13" fill="none" stroke-linecap="round"/><path d="M10 66 C24 40 40 76 54 52 C66 32 80 48 90 36" stroke="#a85858" stroke-width="13" fill="none" stroke-dasharray="1.5 5" opacity=".5"/><path d="M58 46 L66 40" stroke="#e8a0a0" stroke-width="15" stroke-linecap="butt"/><circle cx="88" cy="35" r="1.8" fill="#6b2f2f"/>`),
+};
+const EMO = {mushroom:"🍄", rice:"🌾", fern:"🌿", mango:"🥭", coconut:"🌴", komodo:"🦎", orangutan:"🦧", butterfly:"🦋", foot:"🦶", pine:"🌲"};
+const art = id => ICON[id] || `<span role="img" aria-hidden="true">${EMO[id]||"?"}</span>`;
+
+/* ---------- Bubble the Maltese ---------- */
+function lulu(mood="idle"){
+  const st=`stroke="#c3d5e6" stroke-width="2"`, hair=`stroke="#dbe6f0" stroke-width="2" fill="none" stroke-linecap="round"`;
+  const eyes = mood==="happy"
+    ? `<path d="M42 56 Q48 48 54 56" stroke="#1d2730" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M66 56 Q72 48 78 56" stroke="#1d2730" stroke-width="3.4" fill="none" stroke-linecap="round"/>`
+    : `<circle cx="48" cy="55" r="6.8" fill="#1d2730"/><circle cx="72" cy="55" r="6.8" fill="#1d2730"/><circle cx="50.6" cy="52.4" r="2.4" fill="#fff"/><circle cx="74.6" cy="52.4" r="2.4" fill="#fff"/><circle cx="46.2" cy="58" r="1.1" fill="#fff"/><circle cx="70.2" cy="58" r="1.1" fill="#fff"/>`;
+  const brows = mood==="sad" ? `<path d="M40 47 L52 43" stroke="#9fb3c6" stroke-width="2.6" stroke-linecap="round"/><path d="M80 47 L68 43" stroke="#9fb3c6" stroke-width="2.6" stroke-linecap="round"/>` : "";
+  const mouth = mood==="happy"
+    ? `<path d="M52 71 Q60 83 68 71 Z" fill="#b8405c"/><ellipse cx="60" cy="77.5" rx="4.6" ry="3.4" fill="#ff8fa8"/>`
+    : mood==="sad"
+    ? `<path d="M54 76 Q60 71 66 76" stroke="#1d2730" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+    : `<path d="M54 71 Q57 75 60 71 Q63 75 66 71" stroke="#1d2730" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="75.5" rx="2.8" ry="2.4" fill="#ff8fa8"/>`;
+  return `<svg viewBox="0 0 120 130" class="lulu ${mood}" role="img" aria-label="Bubble si anjing Maltese">
+    <path d="M30 78 C20 100 16 118 22 127 Q60 133 98 127 C104 118 100 100 90 78Z" fill="#fff" ${st}/>
+    <path d="M44 92 C42 106 40 116 38 126 M60 96 V128 M76 92 C78 106 80 116 82 126" ${hair}/>
+    <ellipse cx="47" cy="126" rx="8" ry="5" fill="#fff" ${st}/><ellipse cx="73" cy="126" rx="8" ry="5" fill="#fff" ${st}/>
+    <path d="M34 40 C18 52 15 80 21 104 C25 113 34 109 36 100 C40 84 40 62 42 46Z" fill="#fff" ${st}/>
+    <path d="M86 40 C102 52 105 80 99 104 C95 113 86 109 84 100 C80 84 80 62 78 46Z" fill="#fff" ${st}/>
+    <path d="M28 58 C24 74 24 90 27 102 M92 58 C96 74 96 90 93 102" ${hair}/>
+    <ellipse cx="60" cy="55" rx="29" ry="27" fill="#fff" ${st}/>
+    <path d="M38 38 C44 26 53 32 60 27 C67 32 76 26 82 38" fill="#fff" ${st}/>
+    <path d="M54 28 C52 16 60 9 60 9 C60 9 68 16 66 28Z" fill="#fff" ${st}/>
+    <path d="M60 22 L45 13 L47 31Z" fill="#ff9cc0" stroke="#e4628f" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M60 22 L75 13 L73 31Z" fill="#ff9cc0" stroke="#e4628f" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="60" cy="22" r="4.2" fill="#ff6fa3"/>
+    <ellipse cx="39" cy="65" rx="6" ry="3.6" fill="#ffb3c7" opacity=".75"/><ellipse cx="81" cy="65" rx="6" ry="3.6" fill="#ffb3c7" opacity=".75"/>
+    <ellipse cx="60" cy="69" rx="12.5" ry="9.5" fill="#fbf7f2"/>
+    ${brows}${eyes}
+    <path d="M54 63 Q60 59 66 63 Q66 68 60 69 Q54 68 54 63Z" fill="#1d2730"/><ellipse cx="58" cy="62.4" rx="1.7" ry="1" fill="#fff" opacity=".8"/>
+    ${mouth}
+  </svg>`;
+}
+function say(id,mood,text){ const el=document.getElementById(id); if(el) el.innerHTML = lulu(mood)+`<p class="bubble">${text}</p>`; }
+const TIPS = [
+  "Guk! Baca petunjuknya. Apakah ia punya <b>inti sel</b>?",
+  "Apakah ia <b>bersel satu</b> atau <b>bersel banyak</b>? Itu petunjuk penting!",
+  "Bagaimana ia mendapat makanan: <b>membuat sendiri</b>, <b>menyerap</b>, atau <b>memakan</b>?",
+  "Bingung? Ketuk <b>Lihat petunjuk</b>. Aku tetap bangga padamu!",
+  "Hati-hati dengan soal menjebak. Tidak semua yang hijau itu tumbuhan!"];
+const YAY = ["Hebat! Jawabanmu benar!","Guk guk! Betul sekali!","Ekorku bergoyang untukmu!","Hore! Kamu ilmuwan super!","Benar! Boleh aku dapat camilan sekarang?"];
+const OOPS = ["Yah! Baca penjelasannya, pasti soal berikutnya bisa.","Ups! Yang tadi memang menjebak. Ayo kita pelajari bersama.","Jangan sedih, anjing pintar pun kadang gagal menangkap bola!"];
+
+/* ---------- content ---------- */
+const KINGDOMS = [
+  {id:"monera", name:"Monera", hint:"Tidak punya inti sel", who:"Bakteri dan sianobakteri",
+   blurb:"Makhluk hidup paling sederhana dan paling tua. DNA-nya mengambang bebas di dalam sel karena tidak ada inti sel.",
+   cell:"Prokariotik: tanpa inti sel", count:"Uniseluler (bersel satu)", food:"Ada yang membuat makanan sendiri; banyak yang menyerap makanan", wall:"Ada", move:"Sebagian berenang dengan flagel", ex:"E. coli, Lactobacillus, sianobakteri"},
+  {id:"protista", name:"Protista", hint:"Umumnya bersel satu, punya inti sel", who:"Protozoa dan alga sederhana",
+   blurb:"Organisme eukariotik yang bukan jamur, tumbuhan, atau hewan. Kebanyakan bersel satu dan hidup di air atau di dalam organisme lain.",
+   cell:"Eukariotik", count:"Umumnya uniseluler; ada yang membentuk koloni", food:"Autotrof atau heterotrof (ada yang keduanya)", wall:"Sebagian punya", move:"Silia, flagel, atau kaki semu (pseudopodia)", ex:"Amoeba, Paramecium, Euglena"},
+  {id:"fungi", name:"Fungi", hint:"Menyerap makanan, tumbuh dari spora", who:"Jamur payung, kapang, dan khamir (ragi)",
+   blurb:"Tidak berklorofil. Tubuhnya berupa jalinan benang yang disebut hifa. Kebanyakan adalah pengurai yang menguraikan sisa makhluk hidup.",
+   cell:"Eukariotik", count:"Umumnya multiseluler; ragi bersel satu", food:"Heterotrof yang menyerap makanan", wall:"Ada, terbuat dari kitin", move:"Tidak bergerak", ex:"Jamur payung, kapang tempe, ragi"},
+  {id:"plantae", name:"Plantae", hint:"Membuat makanan dari cahaya matahari", who:"Lumut, paku, tumbuhan berbiji terbuka, dan tumbuhan berbunga",
+   blurb:"Berwarna hijau karena klorofil di dalam kloroplas, yang mengubah cahaya matahari, air, dan karbon dioksida menjadi gula.",
+   cell:"Eukariotik", count:"Multiseluler (bersel banyak)", food:"Autotrof: fotosintesis", wall:"Ada, terbuat dari selulosa", move:"Tidak berpindah tempat", ex:"Padi, tumbuhan paku, anggrek bulan"},
+  {id:"animalia", name:"Animalia", hint:"Memakan makanan, tanpa dinding sel", who:"Spons, cacing, serangga, ikan, reptil, mamalia",
+   blurb:"Memasukkan makanan ke dalam tubuh lalu mencernanya. Kebanyakan punya otot dan saraf serta dapat bergerak pada tahap tertentu dalam hidupnya.",
+   cell:"Eukariotik", count:"Multiseluler (bersel banyak)", food:"Heterotrof yang memakan (menelan) makanan", wall:"Tidak ada", move:"Kebanyakan bergerak pada tahap tertentu dalam hidupnya", ex:"Komodo, terumbu karang, orang utan"},
+];
+const KMAP = Object.fromEntries(KINGDOMS.map(k=>[k.id,k]));
+const KIDS = KINGDOMS.map(k=>k.id);
+
+const ORGS = [
+  // Monera
+  {k:"monera", icon:"ecoli", name:"E. coli", alt:"Escherichia coli",
+   desc:"Sel kecil berbentuk batang yang hidup di dalam ususmu. Miliaran bakteri ini ada di tubuhmu sekarang juga.",
+   clue:"Selnya yang tunggal tidak punya inti sel. DNA-nya hanya berupa lingkaran yang lepas.",
+   why:"E. coli adalah bakteri. Selnya yang tunggal tidak punya inti sel, jadi termasuk prokariotik, dan semua prokariotik termasuk Monera."},
+  {k:"monera", icon:"strep", name:"Streptococcus", alt:"bakteri berbentuk rantai",
+   desc:"Sel-sel bulat yang tersusun seperti untaian manik-manik. Beberapa jenisnya menyebabkan radang tenggorokan.",
+   clue:"Setiap sel bulatnya tidak punya inti sel.",
+   why:"Streptococcus adalah bakteri: sel tunggal tanpa inti sel. Karena itu ia termasuk Monera."},
+  {k:"monera", icon:"cyano", name:"Sianobakteri", alt:"sering disebut “ganggang hijau-biru”",
+   desc:"Sel-sel hijau kebiruan yang membentuk rantai panjang dan membuat makanan sendiri dari cahaya matahari. Mereka bisa membuat kolam berwarna hijau terang.",
+   clue:"Membuat makanan dari cahaya matahari belum tentu tumbuhan. Periksa apakah ada inti sel.",
+   why:"Menjebak! Sianobakteri berfotosintesis seperti tumbuhan dan disebut ganggang, tetapi selnya tidak punya inti sel. Mereka adalah bakteri, jadi termasuk Monera."},
+  {k:"monera", icon:"lacto", name:"Lactobacillus", alt:"bakteri yoghurt",
+   desc:"Sel berbentuk batang yang mengubah susu menjadi yoghurt dengan membuatnya asam. Sebagian juga hidup di ususmu.",
+   clue:"Ini sel tunggal tanpa inti sel.",
+   why:"Lactobacillus adalah bakteri yang bermanfaat. Selnya prokariotik tanpa inti sel, sehingga termasuk Monera."},
+  {k:"monera", icon:"aceto", name:"Bakteri nata de coco", alt:"Acetobacter xylinum",
+   desc:"Sel-sel kecil yang tumbuh di air kelapa dan membentuk jeli putih kenyal bernama nata de coco.",
+   clue:"Setiap selnya prokariotik.",
+   why:"Bakteri ini membentuk nata de coco dari air kelapa. Mereka bersel satu tanpa inti sel, jadi termasuk Monera."},
+  {k:"monera", icon:"rhizo", name:"Rhizobium", alt:"bakteri bintil akar",
+   desc:"Sel-sel kecil yang hidup di bintil akar kacang tanah dan kedelai. Mereka mengubah nitrogen dari udara menjadi makanan bagi tumbuhan.",
+   clue:"Ia hidup di dalam tumbuhan, tetapi bukan tumbuhan. Selnya tidak punya inti sel.",
+   why:"Rhizobium hidup di akar tumbuhan, tetapi ia bakteri tanpa inti sel, jadi termasuk Monera."},
+  // Protista
+  {k:"protista", icon:"amoeba", name:"Amoeba", alt:"protozoa kolam",
+   desc:"Sel tunggal tanpa bentuk tetap yang hidup di air kolam. Ia bergerak dengan menjulurkan “kaki semu” dan menyelubungi makanannya.",
+   clue:"Hanya satu sel, tetapi sel itu punya inti sel.",
+   why:"Amoeba adalah satu sel eukariotik (punya inti sel). Organisme eukariotik bersel satu seperti ini termasuk Protista."},
+  {k:"protista", icon:"paramecium", name:"Paramecium", alt:"hewan sandal",
+   desc:"Sel berbentuk sandal yang tertutup rambut-rambut halus bernama silia. Silia bergerak seperti dayung untuk berenang.",
+   clue:"Ini satu sel yang punya inti sel.",
+   why:"Paramecium adalah satu sel eukariotik yang bergerak dengan silia. Ini contoh protista yang khas."},
+  {k:"protista", icon:"euglena", name:"Euglena", alt:"flagelata hijau",
+   desc:"Sel tunggal berwarna hijau dengan ekor seperti cambuk. Ia membuat makanan saat ada cahaya dan mengambil makanan saat gelap.",
+   clue:"Ia mirip tumbuhan sekaligus hewan. Hitung jumlah selnya.",
+   why:"Menjebak! Euglena punya kloroplas seperti tumbuhan dan berenang seperti hewan, tetapi hanya satu sel dengan inti sel. Organisme seperti ini termasuk Protista."},
+  {k:"protista", icon:"plasmodium", name:"Plasmodium", alt:"parasit malaria",
+   desc:"Parasit bersel satu yang disebarkan nyamuk Anopheles. Ia hidup di dalam sel darah merah dan menyebabkan malaria.",
+   clue:"Ia dibawa nyamuk, tetapi hanya satu sel yang punya inti sel.",
+   why:"Plasmodium adalah satu sel eukariotik, jadi ia protista, meskipun dibawa oleh nyamuk."},
+  {k:"protista", icon:"diatom", name:"Diatom", alt:"alga bercangkang kaca",
+   desc:"Sel tunggal di dalam cangkang seperti kaca, melayang di laut sebagai plankton dan membuat makanan dari cahaya matahari.",
+   clue:"Ia berfotosintesis, tetapi hanya satu sel.",
+   why:"Diatom membuat makanan dari cahaya matahari, tetapi setiap diatom hanya satu sel eukariotik, bukan tumbuhan. Diatom termasuk Protista."},
+  {k:"protista", icon:"volvox", name:"Volvox", alt:"alga hijau berkoloni",
+   desc:"Bola hijau berongga yang terdiri atas ratusan sel, masing-masing dengan dua ekor kecil. Ia berguling di air kolam.",
+   clue:"Sel-selnya sama semua dan hanya bergabung longgar, tanpa jaringan atau organ.",
+   why:"Volvox adalah koloni sel alga sederhana tanpa jaringan atau organ. Alga sederhana seperti ini dikelompokkan ke Protista."},
+  // Fungi
+  {k:"fungi", icon:"mushroom", name:"Jamur payung", alt:"tubuh buah jamur",
+   desc:"Tumbuh di tanah lembap dan kayu lapuk setelah hujan. Ia menjatuhkan spora dari bilah-bilah di bawah tudungnya.",
+   clue:"Ia tidak punya klorofil, jadi tidak bisa membuat makanan sendiri.",
+   why:"Jamur bukan tumbuhan. Jamur tidak punya klorofil, menyerap makanan dari tempat tumbuhnya, berdinding sel kitin, dan berkembang biak dengan spora. Itulah Fungi."},
+  {k:"fungi", icon:"yeast", name:"Ragi (khamir)", alt:"Saccharomyces",
+   desc:"Sel-sel lonjong tunggal yang memakan gula dan menghasilkan gelembung gas. Ragi membuat adonan roti mengembang dan membantu fermentasi tapai.",
+   clue:"Satu sel dengan inti sel, tetapi berbeda dari organisme eukariotik bersel satu lainnya.",
+   why:"Menjebak! Ragi hanya satu sel, tetapi ia jamur sejati: menyerap makanan, berdinding sel kitin, dan berkembang biak dengan bertunas. Ragi termasuk Fungi."},
+  {k:"fungi", icon:"tempeh", name:"Kapang tempe", alt:"Rhizopus",
+   desc:"Benang-benang putih halus yang tumbuh di antara kedelai rebus dan menyatukannya menjadi tempe yang padat.",
+   clue:"Tubuhnya terdiri atas benang-benang bernama hifa yang menyerap makanan.",
+   why:"Kapang tempe adalah jamur. Benang-benangnya (hifa) tumbuh ke dalam kedelai dan menyerap makanan darinya."},
+  {k:"fungi", icon:"penicillium", name:"Penicillium", alt:"kapang hijau-biru",
+   desc:"Bulu halus hijau kebiruan pada jeruk yang sudah lama. Salah satu jenisnya menghasilkan penisilin, antibiotik pertama.",
+   clue:"Ia menyerap makanan dari jeruk dan menyebar dengan spora.",
+   why:"Penicillium adalah kapang, dan kapang termasuk jamur: tanpa klorofil, menyerap makanan dari sekitarnya, dan berkembang biak dengan spora."},
+  {k:"fungi", icon:"oncom", name:"Kapang oncom", alt:"Neurospora",
+   desc:"Benang-benang jingga yang ditumbuhkan pada bungkil kacang tanah untuk membuat oncom, makanan khas Jawa Barat.",
+   clue:"Ia tidak bisa berfotosintesis. Ia mencerna dan menyerap bungkil kacang.",
+   why:"Neurospora adalah jamur. Ia mendapat makanan dengan menyerap zat dari bungkil kacang dan menghasilkan spora berwarna jingga."},
+  {k:"fungi", icon:"woodear", name:"Jamur kuping", alt:"Auricularia",
+   desc:"Jamur cokelat kenyal berbentuk telinga yang tumbuh di batang kayu mati, sering diiris untuk sup.",
+   clue:"Ia hidup dari kayu mati dan menguraikannya.",
+   why:"Jamur kuping menguraikan kayu mati dan menyerap makanannya. Pengurai seperti ini termasuk Fungi."},
+  // Plantae
+  {k:"plantae", icon:"rice", name:"Tanaman padi", alt:"Oryza sativa",
+   desc:"Rumput yang ditanam di sawah berair. Daun hijaunya menangkap cahaya matahari, dan bijinya menjadi beras yang kita makan.",
+   clue:"Daun hijaunya penuh klorofil.",
+   why:"Padi bersel banyak, membuat makanan dengan fotosintesis, dan berdinding sel selulosa. Itulah Plantae."},
+  {k:"plantae", icon:"moss", name:"Lumut", alt:"Bryophyta",
+   desc:"Hamparan hijau lembut yang tumbuh di batu dan tembok lembap. Ia tidak punya bunga, biji, atau akar sejati.",
+   clue:"Ia berwarna hijau dan membuat makanan sendiri dari cahaya matahari.",
+   why:"Lumut tidak punya bunga atau biji, tetapi bersel banyak dan berfotosintesis dengan klorofil. Lumut adalah tumbuhan."},
+  {k:"plantae", icon:"fern", name:"Tumbuhan paku", alt:"pakis",
+   desc:"Tumbuhan berdaun di tempat teduh, dengan titik-titik cokelat berisi spora di bawah daunnya.",
+   clue:"Spora tidak membuatnya jadi jamur. Lihat daunnya yang hijau.",
+   why:"Menjebak! Tumbuhan paku memakai spora seperti jamur, tetapi berwarna hijau, membuat makanan dengan fotosintesis, dan berdinding sel selulosa. Paku adalah tumbuhan."},
+  {k:"plantae", icon:"orchid", name:"Anggrek bulan", alt:"Phalaenopsis amabilis",
+   desc:"Salah satu bunga nasional Indonesia, dengan kelopak putih yang lebar. Akarnya menempel pada kulit pohon.",
+   clue:"Daunnya yang tebal dan hijau membuat makanan dari cahaya matahari.",
+   why:"Anggrek bulan adalah tumbuhan berbunga: bersel banyak, berklorofil, dan berfotosintesis."},
+  {k:"plantae", icon:"mango", name:"Pohon mangga", alt:"Mangifera indica",
+   desc:"Pohon besar yang rindang dan berbuah manis. Daunnya mengubah cahaya matahari menjadi gula.",
+   clue:"Ia tetap tertanam di satu tempat dan daunnya membuat gula.",
+   why:"Pohon adalah tumbuhan: bersel banyak, berfotosintesis, dan berdinding sel selulosa."},
+  {k:"plantae", icon:"coconut", name:"Pohon kelapa", alt:"Cocos nucifera",
+   desc:"Pohon tinggi yang banyak tumbuh di pantai Indonesia. Hampir semua bagiannya bisa dimanfaatkan.",
+   clue:"Daunnya yang hijau membuat makanannya.",
+   why:"Pohon kelapa adalah tumbuhan berbunga yang membuat makanan dengan fotosintesis, jadi termasuk Plantae."},
+  // Animalia
+  {k:"animalia", icon:"komodo", name:"Komodo", alt:"Varanus komodoensis",
+   desc:"Kadal terbesar di dunia yang hanya hidup di beberapa pulau di Indonesia. Ia memburu rusa dan babi hutan.",
+   clue:"Ia memakan makhluk hidup lain untuk mendapat makanan.",
+   why:"Komodo bersel banyak, tidak punya dinding sel, memakan makanannya, dan bergerak. Itulah Animalia."},
+  {k:"animalia", icon:"orangutan", name:"Orang utan", alt:"kera besar dari Sumatra dan Kalimantan",
+   desc:"Kera besar berambut merah yang makan buah dan membuat sarang tidur baru di pohon setiap malam.",
+   clue:"Ia memakan makanan dan selnya tidak punya dinding sel.",
+   why:"Orang utan adalah mamalia. Ia memakan makanannya dan tersusun atas banyak sel tanpa dinding sel, jadi termasuk Animalia."},
+  {k:"animalia", icon:"coral", name:"Terumbu karang", alt:"polip pembentuk karang",
+   desc:"Tampak seperti batu atau tumbuhan berwarna-warni, tetapi menangkap makanan dengan tentakel kecil yang menyengat.",
+   clue:"Setiap karang adalah koloni polip kecil yang memakan plankton.",
+   why:"Menjebak! Karang bukan tumbuhan atau batu. Karang terdiri atas hewan-hewan kecil bernama polip yang menangkap dan memakan makanan. Animalia."},
+  {k:"animalia", icon:"sponge", name:"Spons laut", alt:"Porifera",
+   desc:"Menempel di satu tempat tanpa otak, jantung, atau lambung. Ia menyaring makanan dari air yang mengalir melalui lubang-lubangnya.",
+   clue:"Ia memasukkan partikel makanan ke tubuhnya, dan selnya tidak punya dinding sel.",
+   why:"Menjebak! Spons dewasa tidak bergerak dan tidak punya organ, tetapi bersel banyak, tidak berdinding sel, dan memasukkan makanan ke tubuhnya. Spons adalah hewan paling sederhana."},
+  {k:"animalia", icon:"jelly", name:"Ubur-ubur", alt:"Scyphozoa",
+   desc:"Hewan tembus pandang yang melayang di laut, tanpa tulang atau otak. Ia menyengat ikan kecil lalu menelannya.",
+   clue:"Ia menangkap dan menelan makanannya.",
+   why:"Ubur-ubur memakan organisme lain dan bersel banyak tanpa dinding sel, jadi termasuk Animalia."},
+  {k:"animalia", icon:"worm", name:"Cacing tanah", alt:"Annelida",
+   desc:"Tabung lunak bercincin yang menggali tanah sambil menelan tanah dan daun mati.",
+   clue:"Ia menelan makanannya dan bergerak sendiri.",
+   why:"Cacing tanah menelan makanannya dan bergerak sendiri. Bersel banyak, tanpa dinding sel: Animalia."},
+  {k:"animalia", icon:"butterfly", name:"Kupu-kupu", alt:"Lepidoptera",
+   desc:"Serangga yang memulai hidup sebagai ulat dan saat dewasa mengisap nektar bunga.",
+   clue:"Ia memakan makanan dan berpindah tempat.",
+   why:"Serangga adalah hewan: bersel banyak, tanpa dinding sel, dan memakan makanannya."},
+];
+
+const MYSTERY = [
+  {k:"monera", icon:"cyano", name:"Sianobakteri", clues:[
+    "Aku sangat kecil, kamu perlu mikroskop untuk melihatku.",
+    "Aku membuat makanan sendiri dengan cahaya matahari.",
+    "Orang kadang menyebutku ganggang, dan aku bisa membuat kolam jadi hijau.",
+    "Selku sama sekali tidak punya inti sel."],
+   why:"Sianobakteri berfotosintesis, tetapi selnya tidak punya inti sel, jadi termasuk bakteri dalam Monera."},
+  {k:"protista", icon:"euglena", name:"Euglena", clues:[
+    "Aku hidup di kolam dan genangan air.",
+    "Saat cerah, aku membuat makanan dengan kloroplasku.",
+    "Saat gelap, aku mengambil makanan, dan aku berenang dengan flagel seperti cambuk.",
+    "Aku satu sel yang punya inti sel."],
+   why:"Euglena adalah satu sel eukariotik yang sebagian mirip tumbuhan dan sebagian mirip hewan. Ia termasuk Protista."},
+  {k:"fungi", icon:"mushroom", name:"Jamur payung", clues:[
+    "Kamu bisa menemukanku di tanah hutan yang lembap setelah hujan.",
+    "Aku tidak punya klorofil, jadi tidak bisa membuat makanan sendiri.",
+    "Aku melepaskan jutaan spora dari bilah di bawah tudungku.",
+    "Dinding selku mengandung kitin, dan aku menyerap makanan dari kayu lapuk."],
+   why:"Jamur menyerap makanan, berkembang biak dengan spora, dan berdinding sel kitin: Fungi."},
+  {k:"plantae", icon:"fern", name:"Tumbuhan paku", clues:[
+    "Aku suka tempat yang teduh dan lembap.",
+    "Aku tidak punya bunga dan biji.",
+    "Aku membuat spora dalam titik-titik cokelat di bawah daunku.",
+    "Aku hijau, membuat makanan dengan fotosintesis, dan dinding selku dari selulosa."],
+   why:"Spora bisa mengecoh, tetapi tumbuhan paku berfotosintesis dan berdinding sel selulosa. Paku adalah tumbuhan."},
+  {k:"animalia", icon:"coral", name:"Terumbu karang", clues:[
+    "Aku hidup di laut dangkal yang hangat di sekitar Indonesia.",
+    "Aku menetap di satu tempat sepanjang hidup dewasaku.",
+    "Banyak orang mengira aku batu atau tumbuhan.",
+    "Aku terdiri atas polip kecil yang menangkap makanan dengan tentakel penyengat."],
+   why:"Polip karang menangkap dan memakan makanan serta tidak punya dinding sel. Karang adalah hewan."},
+  {k:"fungi", icon:"yeast", name:"Ragi (khamir)", clues:[
+    "Aku hanya terdiri atas satu sel.",
+    "Selku punya inti sel.",
+    "Aku tidak bisa berfotosintesis. Aku memakan gula.",
+    "Pembuat roti memakaiku agar adonan mengembang."],
+   why:"Ragi adalah jamur bersel satu. Ia menyerap gula dan berdinding sel kitin."},
+  {k:"monera", icon:"lacto", name:"Lactobacillus", clues:[
+    "Aku hidup di susu dan di ususmu.",
+    "Miliaran diriku muat di satu sendok.",
+    "Aku mengubah gula susu menjadi asam, sehingga yoghurt terasa asam.",
+    "Aku adalah prokariota."],
+   why:"Lactobacillus adalah bakteri tanpa inti sel, jadi termasuk Monera."},
+  {k:"protista", icon:"amoeba", name:"Amoeba", clues:[
+    "Aku hidup di kolam dan tanah basah.",
+    "Bentukku tidak tetap.",
+    "Aku bergerak dengan menjulurkan “kaki semu” yang disebut pseudopodia.",
+    "Aku satu sel yang punya inti sel, dan aku makan dengan menyelubungi makananku."],
+   why:"Amoeba adalah satu sel eukariotik. Ia termasuk Protista."},
+  {k:"animalia", icon:"sponge", name:"Spons laut", clues:[
+    "Aku hidup di laut.",
+    "Aku tidak punya otak, jantung, atau lambung.",
+    "Tubuhku penuh lubang yang dialiri air.",
+    "Aku bersel banyak, selku tidak berdinding, dan aku menyaring makanan kecil dari air."],
+   why:"Spons memasukkan makanan ke tubuhnya dan tidak punya dinding sel. Spons adalah hewan paling sederhana."},
+  {k:"plantae", icon:"moss", name:"Lumut", clues:[
+    "Aku tumbuh seperti karpet hijau lembut di batu dan tembok.",
+    "Aku tidak punya akar sejati, hanya benang-benang kecil mirip akar.",
+    "Aku membuat makanan sendiri dari cahaya matahari.",
+    "Aku bersel banyak, dan dinding selku dari selulosa."],
+   why:"Lumut adalah tumbuhan sederhana: bersel banyak, hijau, dan berfotosintesis."},
+];
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const shuffle = a => {a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const store = {
+  get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+};
+function setK(el,kid){KIDS.forEach(id=>el.classList.remove("k-"+id)); if(kid) el.classList.add("k-"+kid);}
+function binsHTML(prefix){
+  return `<p class="bins-title">Pilih kingdom</p>` + KINGDOMS.map((k,i)=>
+    `<button type="button" class="bin k-${k.id}" id="${prefix}-${k.id}" data-k="${k.id}"><span class="key">${i+1}</span><span><span class="bin-name">${k.name}</span><span class="bin-hint">${k.hint}</span></span></button>`).join("");
+}
+function dots(el,total,i,results){
+  el.innerHTML = Array.from({length:total},(_,n)=>{
+    let c = "dot"; if(n<results.length) c += results[n].ok ? " ok":" no"; else if(n===i) c+=" now";
+    return `<span class="${c}"></span>`;}).join("");
+}
+const PRAISE = ["Benar!","Tepat sekali!","Hebat!","Pintar!","Betul!"];
+const pick = a => a[Math.floor(Math.random()*a.length)];
+
+/* ---------- SORT IT ---------- */
+let sort;
+const SORT_N = 10;
+function newSort(){
+  const deck = [];
+  KIDS.forEach(k=>deck.push(...shuffle(ORGS.filter(o=>o.k===k)).slice(0,2)));
+  sort = {deck:shuffle(deck), i:0, score:0, streak:0, answered:false, clue:false, results:[]};
+  $("sortPlay").hidden=false; $("sortEnd").hidden=true;
+  renderSort();
+}
+function renderSort(){
+  const o = sort.deck[sort.i], card=$("specimen");
+  card.classList.remove("answered","fresh"); void card.offsetWidth; card.classList.add("fresh");
+  setK(card,null); card.setAttribute("draggable","true");
+  $("specArt").innerHTML = art(o.icon);
+  $("specTag").textContent = `Spesimen ${sort.i+1} dari ${SORT_N}`;
+  $("specName").textContent = o.name;
+  $("specAlt").textContent = o.alt;
+  $("specDesc").textContent = o.desc;
+  $("specClue").hidden = true; $("specClue").textContent = "Petunjuk: " + o.clue;
+  $("clueBtn").hidden=false; $("clueBtn").disabled=false;
+  $("sortFeedback").hidden = true;
+  document.querySelectorAll("#sortBins .bin").forEach(b=>{b.disabled=false;b.classList.remove("right","wrong","over");});
+  $("sortScore").textContent = sort.score; $("sortStreak").textContent = sort.streak;
+  dots($("sortDots"),SORT_N,sort.i,sort.results);
+  say("sortBuddy","idle", sort.i===0 ? "Hai, aku <b>Bubble</b>! Bantu aku mengelompokkan makhluk hidup ini ke kingdom yang tepat, ya." : TIPS[sort.i % TIPS.length]);
+}
+function answerSort(kid){
+  if(!sort || sort.answered) return;
+  const o = sort.deck[sort.i], ok = kid===o.k;
+  let pts=0, bonus=0;
+  if(ok){ sort.streak++; bonus = Math.min(10, 2*(sort.streak-1)); pts=(sort.clue?5:10)+bonus; sort.score+=pts; }
+  else sort.streak=0;
+  sort.results.push({o, pick:kid, ok, pts});
+  sort.answered = true;
+  const card=$("specimen"); card.classList.add("answered"); setK(card,o.k); card.setAttribute("draggable","false");
+  document.querySelectorAll("#sortBins .bin").forEach(b=>{
+    b.disabled=true;
+    if(b.dataset.k===o.k) b.classList.add("right");
+    else if(b.dataset.k===kid) b.classList.add("wrong");
+  });
+  $("clueBtn").hidden=true;
+  say("sortBuddy", ok?"happy":"sad", ok ? (sort.streak>=3 ? `${sort.streak} kali benar berturut-turut! Hebat sekali! Guk!` : pick(YAY)) : pick(OOPS));
+  const last = sort.i===SORT_N-1;
+  const fb=$("sortFeedback");
+  fb.innerHTML = `<p class="verdict ${ok?"ok":"no"}">${ok?pick(PRAISE):"Belum tepat."}</p>
+    <p>${ok?"":`Kamu memilih ${KMAP[kid].name}. `}Organisme ini termasuk kingdom <span class="kword k-${o.k}">${KMAP[o.k].name}</span>. ${o.why}</p>
+    ${ok?`<p class="pts">+${pts} poin${bonus?` (termasuk bonus beruntun +${bonus})`:""}${sort.clue?" (memakai petunjuk)":""}</p>`:""}
+    <div class="actions"><button class="btn" id="sortNext" type="button">${last?"Lihat hasilku":"Spesimen berikutnya"}</button></div>`;
+  fb.hidden=false;
+  $("sortNext").addEventListener("click",nextSort);
+  $("sortNext").focus({preventScroll:true});
+  $("sortScore").textContent = sort.score; $("sortStreak").textContent = sort.streak;
+  dots($("sortDots"),SORT_N,sort.i,sort.results);
+}
+function nextSort(){
+  if(!sort.answered) return;
+  sort.i++; sort.answered=false; sort.clue=false;
+  if(sort.i>=SORT_N) return endSort();
+  renderSort();
+}
+function endSort(){
+  const correct = sort.results.filter(r=>r.ok).length;
+  const prev = +store.get("fkq-id-best-sort")||0, best=Math.max(prev,sort.score);
+  store.set("fkq-id-best-sort",best); $("sortBest").textContent=best;
+  dots($("sortDots"),SORT_N,SORT_N,sort.results);
+  $("sortPlay").hidden=true;
+  const end=$("sortEnd");
+  end.innerHTML = resultsHTML({
+    score:sort.score, of:"", correct, total:SORT_N, newBest: sort.score>prev && prev>0,
+    rows: KINGDOMS.map(k=>{const rs=sort.results.filter(r=>r.o.k===k.id);return {k, got:rs.filter(r=>r.ok).length, n:rs.length};}),
+    review: sort.results.map(r=>({k:r.o.k, name:r.o.name, ok:r.ok, pick:r.pick, why:r.o.why})),
+    again:"sortAgain", other:"mystery", otherLabel:"Coba Organisme Misterius"
+  });
+  end.hidden=false;
+  $("sortAgain").addEventListener("click",newSort);
+}
+function resultsHTML(d){
+  const pct = Math.round(100*d.correct/d.total);
+  const msg = pct===100?"Klasifikasi sempurna! Kamu benar-benar ahli taksonomi.":pct>=80?"Kerja bagus! Periksa jawaban yang masih salah di daftar jawaban.":pct>=50?"Usaha yang baik. Baca penjelasannya, lalu main lagi untuk mengalahkan skormu.":"Terus semangat! Buka Buku Panduan, lalu main lagi.";
+  const luluMsg = pct===100?"GUK! Skor sempurna! Kamu ilmuwan favoritku!":pct>=80?"Keren sekali! Yuk, periksa jawaban yang masih salah.":pct>=50?"Usaha yang bagus! Yuk, main lagi dan kalahkan skor itu.":"Yuk, baca Buku Panduan bersama, lalu coba lagi!";
+  return `<div class="results">
+    <div class="card">
+      <div class="buddy">${lulu(pct>=50?"happy":"idle")}<p class="bubble">${luluMsg}</p></div>
+      <p class="tagline">Ronde selesai</p>
+      <p class="big">${d.score}<small> poin</small></p>
+      <p>${d.correct} dari ${d.total} benar. ${d.newBest?"<strong>Skor terbaik baru!</strong> ":""}${msg}</p>
+      <h3 style="margin-top:18px">Per kingdom</h3>
+      <div class="rows">${d.rows.filter(r=>r.n).map(r=>`<div class="krow k-${r.k.id}"><span class="nm">${r.k.name}</span><span class="bar"><i style="width:${100*r.got/r.n}%"></i></span><span class="ct">${r.got}/${r.n}</span></div>`).join("")}</div>
+      <div class="actions"><button class="btn" id="${d.again}" type="button">Main lagi</button><button class="btn ghost" type="button" data-go="${d.other}">${d.otherLabel}</button><button class="btn ghost" type="button" data-go="learn">Buku Panduan</button></div>
+    </div>
+    <div>
+      <h3>Periksa jawabanmu</h3>
+      <ul class="review">${d.review.map(r=>`<li class="k-${r.k}"><div class="r-top"><strong>${r.name}</strong><span class="mark ${r.ok?"ok":"no"}">${r.ok?"✓ Benar":"✗ "+(r.pick?"Jawabanmu: "+KMAP[r.pick].name:"Belum terjawab")}</span></div><p><span class="kword">${KMAP[r.k].name}.</span> ${r.why}</p></li>`).join("")}</ul>
+    </div>
+  </div>`;
+}
+
+/* ---------- MYSTERY ---------- */
+let mys;
+const MYS_N = 6, WORTH=[40,30,20,10];
+function newMystery(){
+  mys = {deck:shuffle(MYSTERY).slice(0,MYS_N), i:0, shown:1, out:new Set(), score:0, solved:false, results:[], fresh:0};
+  $("mysPlay").hidden=false; $("mysEnd").hidden=true;
+  renderMystery(); mysIdle();
+}
+function mysIdle(){ say("mysBuddy","idle", mys.shown===1 ? "Endus, endus... Ada misteri! Baca petunjuknya. Bisakah kamu menebak kingdom-nya?" : `Ini petunjuk ke-${mys.shown}. Sekarang menurutmu apa?`); }
+function renderMystery(){
+  const m = mys.deck[mys.i], card=$("mysCard");
+  card.classList.toggle("answered",mys.solved); setK(card, mys.solved?m.k:null);
+  $("mysTag").textContent = `Misteri ${mys.i+1} dari ${MYS_N}`;
+  $("mysArt").innerHTML = mys.solved ? art(m.icon) : `<span class="q">?</span>`;
+  $("mysName").textContent = mys.solved ? m.name : "Siapakah aku?";
+  $("mysAlt").textContent = mys.solved ? "" : "Tebak lebih awal untuk poin lebih banyak. Tebakan salah akan membuka petunjuk berikutnya.";
+  $("mysClues").innerHTML = m.clues.map((c,n)=> n<mys.shown
+    ? `<li class="${n===mys.fresh?"fresh":""}"><span class="n">Petunjuk ${n+1}</span><span>${c}</span></li>`
+    : `<li class="locked"><span class="n">Petunjuk ${n+1}</span><span>Terkunci</span></li>`).join("");
+  mys.fresh=-1;
+  $("mysWorth").hidden = mys.solved;
+  $("mysWorth").textContent = `Bernilai ${WORTH[mys.shown-1]} poin jika tebakanmu benar sekarang`;
+  $("mysClueBtn").hidden = mys.solved;
+  $("mysClueBtn").disabled = mys.shown>=4;
+  document.querySelectorAll("#mysBins .bin").forEach(b=>{
+    const k=b.dataset.k;
+    b.classList.toggle("out", mys.out.has(k) && !(mys.solved && k===m.k));
+    b.classList.toggle("right", mys.solved && k===m.k);
+    b.disabled = mys.solved || mys.out.has(k);
+  });
+  $("mysScore").textContent = mys.score;
+  dots($("mysDots"),MYS_N,mys.i,mys.results);
+}
+function revealClue(){ if(mys.solved||mys.shown>=4) return; mys.fresh=mys.shown; mys.shown++; $("mysFeedback").hidden=true; renderMystery(); mysIdle(); }
+function guessMystery(kid){
+  if(!mys||mys.solved||mys.out.has(kid)) return;
+  const m = mys.deck[mys.i], fb=$("mysFeedback");
+  if(kid===m.k){
+    const pts=WORTH[mys.shown-1]; mys.score+=pts; mys.solved=true;
+    mys.results.push({k:m.k,name:m.name,ok:true,pick:kid,why:m.why});
+    fb.innerHTML = `<p class="verdict ok">${pick(PRAISE)} Aku adalah ${m.name}.</p><p>${m.why}</p><p class="pts">+${pts} poin dengan ${mys.shown} petunjuk</p>`+nextBtn();
+  } else if(mys.shown<4){
+    mys.out.add(kid); mys.fresh=mys.shown; mys.shown++;
+    fb.innerHTML = `<p class="verdict no">Bukan ${KMAP[kid].name}.</p><p>Petunjuk baru terbuka. Baca, lalu coba lagi.</p>`;
+  } else {
+    mys.out.add(kid); mys.solved=true;
+    mys.results.push({k:m.k,name:m.name,ok:false,pick:kid,why:m.why});
+    fb.innerHTML = `<p class="verdict no">Petunjuk sudah habis!</p><p>Aku adalah ${m.name}, termasuk kingdom <span class="kword k-${m.k}">${KMAP[m.k].name}</span>. ${m.why}</p>`+nextBtn();
+  }
+  fb.hidden=false;
+  renderMystery();
+  if(kid===m.k) say("mysBuddy","happy", mys.shown===1 ? "Cuma satu petunjuk?! Kamu jenius! Guk!" : pick(YAY));
+  else if(!mys.solved) say("mysBuddy","sad","Bukan yang itu! Aku menggali petunjuk baru untukmu.");
+  else say("mysBuddy","sad","Yah, petunjuknya habis. Baca jawabannya, ya. Kita pasti bisa di soal berikutnya!");
+  const nb=$("mysNext"); if(nb){nb.addEventListener("click",nextMystery); nb.focus({preventScroll:true});}
+}
+function nextBtn(){return `<div class="actions"><button class="btn" id="mysNext" type="button">${mys.i===MYS_N-1?"Lihat hasilku":"Misteri berikutnya"}</button></div>`;}
+function nextMystery(){
+  if(!mys.solved) return;
+  mys.i++; mys.shown=1; mys.out=new Set(); mys.solved=false; mys.fresh=0; $("mysFeedback").hidden=true;
+  if(mys.i>=MYS_N) return endMystery();
+  renderMystery(); mysIdle();
+}
+function endMystery(){
+  const correct=mys.results.filter(r=>r.ok).length;
+  const prev=+store.get("fkq-id-best-mys")||0, best=Math.max(prev,mys.score);
+  store.set("fkq-id-best-mys",best); $("mysBest").textContent=best;
+  dots($("mysDots"),MYS_N,MYS_N,mys.results);
+  $("mysPlay").hidden=true;
+  const end=$("mysEnd");
+  end.innerHTML = resultsHTML({
+    score:mys.score, correct, total:MYS_N, newBest: mys.score>prev && prev>0,
+    rows: KINGDOMS.map(k=>{const rs=mys.results.filter(r=>r.k===k.id);return {k,got:rs.filter(r=>r.ok).length,n:rs.length};}),
+    review: mys.results, again:"mysAgain", other:"sort", otherLabel:"Coba Kelompokkan!"
+  }).replace("poin</small>",`poin dari ${MYS_N*40}</small>`);
+  end.hidden=false;
+  $("mysAgain").addEventListener("click",newMystery);
+}
+
+/* ---------- FIELD GUIDE ---------- */
+function renderLearn(){
+  $("kgrid").innerHTML = KINGDOMS.map(k=>`<div class="card kcard k-${k.id}"><h3>${k.name}</h3><p class="who">${k.who}</p><p>${k.blurb}</p></div>`).join("");
+  const rows=[["Tipe sel","cell"],["Jumlah sel","count"],["Cara mendapat makanan","food"],["Dinding sel","wall"],["Gerak","move"],["Contoh","ex"]];
+  $("ktable").innerHTML = `<thead><tr><th scope="col"><span class="sr">Ciri</span></th>${KINGDOMS.map(k=>`<th scope="col" class="k-${k.id}">${k.name}</th>`).join("")}</tr></thead>
+   <tbody>${rows.map(([lab,key])=>`<tr><th scope="row">${lab}</th>${KINGDOMS.map(k=>`<td>${k[key]}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+
+/* ---------- views & input ---------- */
+const VIEWS=["sort","mystery","learn"];
+let view="sort";
+function show(v){
+  if(!VIEWS.includes(v)) v="sort";
+  view=v;
+  VIEWS.forEach(n=>$("view-"+n).hidden = n!==v);
+  document.querySelectorAll(".tab").forEach(t=>t.toggleAttribute("aria-current",false));
+  document.querySelector(`.tab[data-view="${v}"]`).setAttribute("aria-current","page");
+}
+function go(v){ if(location.hash!=="#"+v){ try{location.hash=v;}catch(e){} } show(v); window.scrollTo({top:0}); }
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-view],[data-go]"); if(!t) return;
+  go(t.dataset.view||t.dataset.go);
+});
+window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
+
+$("sortBins").innerHTML = binsHTML("sb");
+$("mysBins").innerHTML = binsHTML("mb");
+$("sortBins").addEventListener("click",e=>{const b=e.target.closest(".bin"); if(b) answerSort(b.dataset.k);});
+$("mysBins").addEventListener("click",e=>{const b=e.target.closest(".bin"); if(b) guessMystery(b.dataset.k);});
+$("clueBtn").addEventListener("click",()=>{ if(sort.answered) return; sort.clue=true; $("specClue").hidden=false; $("clueBtn").disabled=true; });
+$("mysClueBtn").addEventListener("click",revealClue);
+
+// drag & drop for the specimen card
+$("specimen").addEventListener("dragstart",e=>{ if(sort.answered){e.preventDefault();return;} e.dataTransfer.setData("text/plain","specimen"); e.dataTransfer.effectAllowed="move"; });
+document.querySelectorAll("#sortBins .bin").forEach(b=>{
+  b.addEventListener("dragover",e=>{ if(!sort.answered){e.preventDefault(); b.classList.add("over");} });
+  b.addEventListener("dragleave",()=>b.classList.remove("over"));
+  b.addEventListener("drop",e=>{ e.preventDefault(); b.classList.remove("over"); answerSort(b.dataset.k); });
+});
+
+document.addEventListener("keydown",e=>{
+  if(e.altKey||e.ctrlKey||e.metaKey) return;
+  const n = parseInt(e.key,10);
+  if(view==="sort" && !$("sortPlay").hidden){
+    if(n>=1&&n<=5){ answerSort(KIDS[n-1]); }
+    else if(e.key==="Enter" && sort.answered && document.activeElement?.id!=="sortNext"){ e.preventDefault(); nextSort(); }
+  } else if(view==="mystery" && !$("mysPlay").hidden){
+    if(n>=1&&n<=5){ guessMystery(KIDS[n-1]); }
+    else if(e.key==="Enter" && mys.solved && document.activeElement?.id!=="mysNext"){ e.preventDefault(); nextMystery(); }
+  }
+});
+
+const bs=store.get("fkq-id-best-sort"), bm=store.get("fkq-id-best-mys");
+if(bs) $("sortBest").textContent=bs; if(bm) $("mysBest").textContent=bm;
+$("brandBubble").innerHTML = lulu("happy").replace(' class="lulu happy"',' class="lulu"');
+say("learnBuddy","happy","Hai, aku <b>Bubble</b>! Baca buku panduanku dulu, lalu ayo bermain!");
+renderLearn(); newSort(); newMystery();
+show(location.hash.slice(1)||"sort");
+</script>
+</body>
+</html>
